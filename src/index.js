@@ -98,6 +98,14 @@ app.get('/v1/models', (req, res) => {
   });
 });
 
+app.get('/checksum', (req, res) => {
+  const checksum = generateCursorChecksum(generateHashed64Hex(), generateHashed64Hex());
+  res.json({
+    checksum
+  });
+});
+
+
 app.post('/v1/chat/completions', async (req, res) => {
   // o1开头的模型，不支持流式输出
   if (req.body.model.startsWith('o1-') && req.body.stream) {
@@ -132,7 +140,9 @@ app.post('/v1/chat/completions', async (req, res) => {
     const hexData = await stringToHex(messages, model);
 
     // 生成checksum
-    const checksum = generateCursorChecksum(generateHashed64Hex(), generateHashed64Hex());
+    const checksum = req.headers['x-cursor-checksum'] 
+                  ?? process.env['x-cursor-checksum'] 
+                  ?? generateCursorChecksum(generateHashed64Hex(), generateHashed64Hex());
 
     const response = await fetch('https://api2.cursor.sh/aiserver.v1.AiService/StreamChat', {
       method: 'POST',
