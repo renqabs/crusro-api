@@ -4,6 +4,12 @@ const { stringToHex, chunkToUtf8String, getRandomIDPro } = require('./utils.js')
 const { generateCursorChecksum, generateHashed64Hex } = require('./generate.js');
 const app = express();
 
+// 在文件开头附近添加
+const startTime = new Date();
+const version = '1.0.0';
+let totalRequests = 0;
+let activeRequests = 0;
+
 // 中间件配置
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -90,6 +96,41 @@ const SUPPORTED_MODELS = [
   }
 ];
 
+// 修改根路由
+app.get('/', (req, res) => {
+  const uptime = Math.floor((new Date() - startTime) / 1000); // 运行时间(秒)
+  
+  res.json({
+    status: 'healthy',
+    version,
+    uptime,
+    stats: {
+      started: startTime.toISOString(),
+      totalRequests,
+      activeRequests,
+      memory: process.memoryUsage()
+    },
+    models: SUPPORTED_MODELS.map(model => model.id),
+    endpoints: [
+      '/v1/chat/completions',
+      '/v1/models', 
+      '/checksum'
+    ]
+  });
+});
+
+// 添加请求计数中间件
+app.use((req, res, next) => {
+  totalRequests++;
+  activeRequests++;
+  
+  res.on('finish', () => {
+    activeRequests--;
+  });
+  
+  next();
+});
+
 // 添加新的路由处理模型列表请求
 app.get('/v1/models', (req, res) => {
   res.json({
@@ -170,7 +211,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 
       const responseId = `chatcmpl-${uuidv4()}`;
 
-      // 使用封装的函数处理 chunk
+      // 使用���装的函数处理 chunk
       for await (const chunk of response.body) {
         const text = await chunkToUtf8String(chunk);
 
