@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { stringToHex, chunkToUtf8String, getRandomIDPro } = require('./utils.js');
@@ -146,6 +148,14 @@ app.get('/checksum', (req, res) => {
   });
 });
 
+// 添加获取环境变量checksum的接口
+app.get('/env-checksum', (req, res) => {
+  const envChecksum = process.env['X_CURSOR_CHECKSUM'];
+  res.json({
+    status: envChecksum ? 'configured' : 'not_configured',
+    checksum: envChecksum || null
+  });
+});
 
 app.post('/v1/chat/completions', async (req, res) => {
   // o1开头的模型，不支持流式输出
@@ -211,7 +221,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 
       const responseId = `chatcmpl-${uuidv4()}`;
 
-      // 使用���装的函数处理 chunk
+      // 使用封装的函数处理 chunk
       for await (const chunk of response.body) {
         const text = await chunkToUtf8String(chunk);
 
