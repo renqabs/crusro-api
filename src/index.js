@@ -55,6 +55,18 @@ const SUPPORTED_MODELS = [
     owned_by: "google"
   },
   {
+    id: "gemini-2.0-flash-exp",
+    created: 1706571819,
+    object: "model",
+    owned_by: "google"
+  },
+  {
+    id: "gemini-2.0-flash-thinking-exp",
+    created: 1706571819,
+    object: "model",
+    owned_by: "google"
+  },
+  {
     id: "gpt-3.5-turbo",
     created: 1706571819,
     object: "model",
@@ -116,7 +128,8 @@ app.get('/', (req, res) => {
     endpoints: [
       '/v1/chat/completions',
       '/v1/models', 
-      '/checksum'
+      '/checksum',
+      '/env-checksum'
     ]
   });
 });
