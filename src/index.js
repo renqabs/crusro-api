@@ -178,12 +178,12 @@ app.post('/v1/chat/completions', async (req, res) => {
     });
   }
 
-  let currentKeyIndex = 0;
   try {
     const { model, messages, stream = false } = req.body;
     let authToken = req.headers.authorization?.replace('Bearer ', '');
     // 处理逗号分隔的密钥
     const keys = authToken.split(',').map((key) => key.trim());
+    let currentKeyIndex = Math.floor(Math.random() * keys.length);
     if (keys.length > 0) {
       // 确保 currentKeyIndex 不会越界
       if (currentKeyIndex >= keys.length) {
@@ -204,10 +204,20 @@ app.post('/v1/chat/completions', async (req, res) => {
     const hexData = await stringToHex(messages, model);
 
     // 生成checksum
-    const checksum = req.headers['x-cursor-checksum'] 
-                  ?? process.env['x-cursor-checksum'] 
-                  ?? generateCursorChecksum(generateHashed64Hex(), generateHashed64Hex());
+    const checksums = (req.headers['x-cursor-checksum']
+        ?? process.env['X_CURSOR_CHECKSUM']
+        ?? generateCursorChecksum(generateHashed64Hex(), generateHashed64Hex()))
+        .split(',')
+        .map(c => c.trim());
 
+    const getChecksumByIndex = (index = 0) => {
+      if (index >= checksums.length) {
+        // 如果下标超出范围，返回最后一个checksum
+        return checksums[checksums.length - 1];
+      }
+      return checksums[index];
+    }
+    let checksum = getChecksumByIndex(currentKeyIndex);
     const response = await fetch('https://api2.cursor.sh/aiserver.v1.AiService/StreamChat', {
       method: 'POST',
       headers: {
