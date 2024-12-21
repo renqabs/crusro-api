@@ -194,7 +194,8 @@ app.post('/v1/chat/completions', async (req, res) => {
       }
     }
     // 使用当前索引获取密钥对
-    let authToken, checksum = SessionTokenAndChecksumPairs[currentKeyIndex]
+    let [authToken, checksum] = SessionTokenAndChecksumPairs[currentKeyIndex]
+    console.log('AuthToken:', authToken, 'Checksum:', checksum)
     if (authToken && authToken.includes('%3A%3A')) {
       authToken = authToken.split('%3A%3A')[1];
     }
