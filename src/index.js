@@ -11,10 +11,21 @@ const startTime = new Date();
 const version = '1.0.0';
 let totalRequests = 0;
 let activeRequests = 0;
-
+/** @type {Map<string, string>} */
+const SessionTokensToChecksums = new Map();
+const WorkosCursorSessionTokens = process.env['WorkosCursorSessionToken'].split(',').map((key) => key.trim());
+const app_secret= process.env['APP_SECRET']
 // 中间件配置
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 为每个WorkosCursorSessionToken初始化唯一的x-cursor-checksum
+WorkosCursorSessionTokens.forEach(item => {
+  SessionTokensToChecksums.set(item, generateCursorChecksum(generateHashed64Hex(), generateHashed64Hex()));
+});
+
+// 将Map转换为数组
+const SessionTokenAndChecksumPairs= Array.from(SessionTokensToChecksums);
 
 // 添加支持的模型列表
 const SUPPORTED_MODELS = [
@@ -154,23 +165,17 @@ app.get('/v1/models', (req, res) => {
   });
 });
 
-app.get('/checksum', (req, res) => {
-  const checksum = generateCursorChecksum(generateHashed64Hex(), generateHashed64Hex());
-  res.json({
-    checksum
-  });
-});
-
-// 添加获取环境变量checksum的接口
-app.get('/env-checksum', (req, res) => {
-  const envChecksum = process.env['X_CURSOR_CHECKSUM'];
-  res.json({
-    status: envChecksum ? 'configured' : 'not_configured',
-    checksum: envChecksum || null
-  });
-});
 
 app.post('/v1/chat/completions', async (req, res) => {
+  // 鉴权
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).end();
+  }
+  const token = authHeader.split(' ')[1];
+  if (app_secret && token !== app_secret) {
+    return res.status(403).end();
+  }
   // o1开头的模型，不支持流式输出
   if (req.body.model.startsWith('o1-') && req.body.stream) {
     return res.status(400).json({
@@ -180,18 +185,16 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   try {
     const { model, messages, stream = false } = req.body;
-    let authToken = req.headers.authorization?.replace('Bearer ', '');
-    // 处理逗号分隔的密钥
-    const keys = authToken.split(',').map((key) => key.trim());
+    // 随机索引
     let currentKeyIndex = Math.floor(Math.random() * keys.length);
     if (keys.length > 0) {
       // 确保 currentKeyIndex 不会越界
-      if (currentKeyIndex >= keys.length) {
+      if (currentKeyIndex >= SessionTokenAndChecksumPairs.length) {
         currentKeyIndex = 0;
       }
-      // 使用当前索引获取密钥
-      authToken = keys[currentKeyIndex];
     }
+    // 使用当前索引获取密钥对
+    let authToken, checksum = SessionTokenAndChecksumPairs[currentKeyIndex]
     if (authToken && authToken.includes('%3A%3A')) {
       authToken = authToken.split('%3A%3A')[1];
     }
@@ -202,22 +205,6 @@ app.post('/v1/chat/completions', async (req, res) => {
     }
 
     const hexData = await stringToHex(messages, model);
-
-    // 生成checksum
-    const checksums = (req.headers['x-cursor-checksum']
-        ?? process.env['X_CURSOR_CHECKSUM']
-        ?? generateCursorChecksum(generateHashed64Hex(), generateHashed64Hex()))
-        .split(',')
-        .map(c => c.trim());
-
-    const getChecksumByIndex = (index = 0) => {
-      if (index >= checksums.length) {
-        // 如果下标超出范围，返回最后一个checksum
-        return checksums[checksums.length - 1];
-      }
-      return checksums[index];
-    }
-    let checksum = getChecksumByIndex(currentKeyIndex);
     const response = await fetch('https://api2.cursor.sh/aiserver.v1.AiService/StreamChat', {
       method: 'POST',
       headers: {
