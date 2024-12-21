@@ -35,8 +35,6 @@ npm run start
 接口地址：
 - `http://localhost:3000/v1/chat/completions`
 - `http://localhost:3000/v1/models`
-- `http://localhost:3000/env-checksum`
-- `http://localhost:3000/checksum`
 - `http://localhost:3000/`
 
 
