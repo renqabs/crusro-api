@@ -4,7 +4,7 @@
 
 1. 访问 [www.cursor.com](https://www.cursor.com) 并完成注册登录（赠送 250 次快速响应，可通过删除账号再注册重置）
 2. 在浏览器中打开开发者工具（F12）
-3. 找到 应用-Cookies 中名为 `WorkosCursorSessionToken` 的值并保存(相当于 openai 的密钥)
+3. 找到 应用-Cookies 中名为 `WorkosCursorSessionToken` 的值并保存
 
 ## 接口说明
 
@@ -52,12 +52,13 @@ npm run start
    RUN sed -i 's/\/v1\/chat\/completions/\/proxy\/v1\/chat\/completions/g' src/index.js
    ```
 
-2. 配置环境变量（一定要配置，一直随机会封号24小时）
+2. 配置环境变量（一定要配置）
 
-   在你的space中，点击settings，找到`Variables and secrets`，添加Variables
-   - name: `X_CURSOR_CHECKSUM`
-   - value: 通过`/checksum`接口获取的随机checksum
-
+   在你的space中，点击settings，找到`Variables and secrets`，添加secrets
+   - name: `WorkosCursorSessionToken`
+   - value: 支持英文逗号分隔的 Token 入参
+   - name: `APP_SECRET`
+   - value: 作为API key使用(相当于 openai 的密钥)
 3. 重新部署
    
    点击`Factory rebuild`，等待部署完成
@@ -76,8 +77,7 @@ npm run start
 
 ## 注意事项
 1. 请妥善保管您的 WorkosCursorSessionToken，不要泄露给他人
-2. 请在部署的项目中，添加x-cursor-checksum到环境变量中，避免触发cursor的24小时多设备警告
-3. 本项目仅供学习研究使用，请遵守 Cursor 的使用条款
+2. 本项目仅供学习研究使用，请遵守 Cursor 的使用条款
 
 ---
 
