@@ -187,13 +187,7 @@ app.post('/v1/chat/completions', async (req, res) => {
   try {
     const { model, messages, stream = false } = req.body;
     // 随机索引
-    let currentKeyIndex = Math.floor(Math.random() * keys.length);
-    if (keys.length > 0) {
-      // 确保 currentKeyIndex 不会越界
-      if (currentKeyIndex >= SessionTokenAndChecksumPairs.length) {
-        currentKeyIndex = 0;
-      }
-    }
+    let currentKeyIndex = Math.floor(Math.random() * SessionTokenAndChecksumPairs.length);
     // 使用当前索引获取密钥对
     let [authToken, checksum] = SessionTokenAndChecksumPairs[currentKeyIndex]
     console.log('AuthToken:', authToken, 'Checksum:', checksum)
