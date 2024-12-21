@@ -19,16 +19,6 @@
 - 接口地址：`/v1/models`
 - 请求方法：GET
 
-### 获取环境变量中的x-cursor-checksum
-
-- 接口地址：`/env-checksum`
-- 请求方法：GET
-
-### 获取随机x-cursor-checksum
-
-- 接口地址：`/checksum`
-- 请求方法：GET
-
 ### 健康检查接口
 
 - 接口地址：`/`
